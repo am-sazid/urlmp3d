@@ -1,32 +1,30 @@
-const express = require('express');
-const request = require('request');
-const fs = require('fs');
+import express from 'express';
+import cors from 'cors';
 
 const app = express();
-const PORT = 3000;
+app.use(cors()); // CORS সমস্যা এড়াতে
 
-app.get("/",(req,res)=>{
-    res.send("hello world ")
-})
+app.get("/", (req, res) => {
+    res.send("🎵 Welcome to the YouTube MP3 Downloader API! 🎵");
+});
 
-app.get('/download', (req, res) => {
-    const audioUrl = req.query.url;
-    if (!audioUrl) {
-        return res.status(400).send('Please provide an MP3 URL');
+// MP3 Download Route (Free API ব্যবহার করে)
+app.get('/api/download', async (req, res) => {
+    const { url } = req.query;
+
+    if (!url) {
+        return res.status(400).json({ error: "Please provide a YouTube URL" });
     }
 
-    const fileName = 'audio.mp3';
-    const fileStream = fs.createWriteStream(fileName);
+    try {
+        // ফ্রি API থেকে MP3 লিংক
+        const apiUrl = `https://api.vevioz.com/api/button/mp3?url=${encodeURIComponent(url)}`;
 
-    request(audioUrl)
-        .pipe(fileStream)
-        .on('finish', () => {
-            res.download(fileName, () => {
-                fs.unlinkSync(fileName); // ডাউনলোডের পর ফাইল ডিলিট করে দেবে
-            });
-        });
+        return res.json({ downloadUrl: apiUrl });
+    } catch (error) {
+        return res.status(500).json({ error: "Failed to convert video to MP3" });
+    }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Vercel Serverless Handler
+export default app;
